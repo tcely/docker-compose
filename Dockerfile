@@ -1,4 +1,4 @@
-FROM docker/compose:1.29.0
+FROM docker/compose:1.29.1
 LABEL maintainer="https://keybase.io/tcely"
 
 ENV ALPINE_VERSION=v3.13
