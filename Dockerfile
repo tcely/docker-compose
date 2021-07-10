@@ -8,7 +8,7 @@ RUN mv -v /etc/apk/repositories /etc/apk/repositories.orig && \
     sed -e "s,/v[0-9][^/]*/,/${ALPINE_VERSION}/," /etc/apk/repositories.orig > /etc/apk/repositories && \
     diff -u /etc/apk/repositories.orig /etc/apk/repositories || :
 
-ENV PASS_VERSION=1.7.3
+ENV PASS_VERSION=1.7.4
 
 RUN apk --update upgrade -a && \
     apk add \
