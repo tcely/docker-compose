@@ -35,7 +35,7 @@ RUN mkdir -v -m 0700 -p /root/.gnupg && \
     apk del --purge .build-depends && \
     rm -rf /var/cache/apk/* /root/.gnupg /tmp/SigningKeys.pass /root/password-store
 
-ENV DCP_VERSION=v0.6.3
+ENV DCP_VERSION=v0.6.4
 
 ADD https://github.com/docker/docker-credential-helpers/releases/download/${DCP_VERSION}/docker-credential-pass-${DCP_VERSION}-amd64.tar.gz /tmp/docker-credential-pass.tar.gz
 
