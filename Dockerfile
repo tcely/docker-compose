@@ -16,8 +16,6 @@ ARG VERSION_DCP
 ADD "https://github.com/docker/docker-credential-helpers/releases/download/v${VERSION_DCP}/docker-credential-pass-v${VERSION_DCP}.linux-amd64" /downloaded/docker-credential-pass
 ADD "https://github.com/docker/docker-credential-helpers/releases/download/v${VERSION_DCP}/checksums.txt" /downloaded/docker-credential-pass.checksums.txt
 
-FROM docker/compose:1.29.2 AS entrypoint
-
 FROM docker:26-cli
 
 ARG VERSION_ALPINE
@@ -35,8 +33,9 @@ RUN --mount=type=tmpfs,target=/var/cache/apk \
     apk add --virtual .build-depends \
         make
 
-COPY --from=entrypoint /usr/local/bin/docker-compose-entrypoint.sh /usr/local/bin/docker-compose-entrypoint.sh
-ENTRYPOINT ["/usr/bin/env", "sh", "/usr/local/bin/docker-compose-entrypoint.sh"]
+COPY --chmod=+rx docker-compose-entrypoint.sh /usr/local/bin/docker-compose-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/docker-compose-entrypoint.sh"]
+RUN rm -v -f /usr/local/bin/docker-compose
 COPY --from=compose-bin --chmod=+rx /docker-compose /usr/local/bin/docker-compose
 
 ARG VERSION_PASS
