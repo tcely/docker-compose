@@ -25,7 +25,7 @@ RUN mv -v /etc/apk/repositories /etc/apk/repositories.orig && \
     cp -v -p /etc/apk/repositories.orig /etc/apk/repositories && \
     sed -e "s,/v[0-9][^/]*/,/v${VERSION_ALPINE}/," /etc/apk/repositories.orig > /etc/apk/repositories && \
     diff -u /etc/apk/repositories.orig /etc/apk/repositories || :
-ENV VERSION_ALPINE="v${VERSION_ALPINE}"
+ENV ALPINE_VERSION="v${VERSION_ALPINE}"
 
 RUN --mount=type=tmpfs,target=/var/cache/apk \
     apk --update upgrade -a && \
@@ -37,7 +37,7 @@ RUN --mount=type=tmpfs,target=/var/cache/apk \
 
 COPY --from=entrypoint /usr/local/bin/docker-compose-entrypoint.sh /usr/local/bin/docker-compose-entrypoint.sh
 ENTRYPOINT ["/usr/bin/env", "sh", "/usr/local/bin/docker-compose-entrypoint.sh"]
-COPY --from=compose-bin /docker-compose /usr/local/bin/docker-compose
+COPY --from=compose-bin --chmod=+rx /docker-compose /usr/local/bin/docker-compose
 
 ARG VERSION_PASS
 RUN --mount=type=tmpfs,target=/tmp \
@@ -55,14 +55,15 @@ RUN --mount=type=tmpfs,target=/tmp \
     ) && \
     apk del --purge .build-depends && \
     rm -rf /var/cache/apk/* /root/.gnupg /root/password-store
-ENV VERSION_PASS="${VERSION_PASS}"
+ENV PASS_VERSION="${VERSION_PASS}"
 
 ARG VERSION_DCP
 RUN --mount=type=tmpfs,target=/tmp \
     --mount=type=bind,source=/downloaded/docker-credential-pass,target=/tmp/docker-credential-pass,from=downloads \
     --mount=type=bind,source=/downloaded/docker-credential-pass.checksums.txt,target=/tmp/docker-credential-pass.checksums.txt,from=downloads \
+    cd /tmp && \
     ln -v -s -f -T docker-credential-pass "docker-credential-pass-v${VERSION_DCP}.linux-amd64" && \
     cksum -a sha256 --check --strict --warn --ignore-missing docker-credential-pass.checksums.txt && \
     install -v -p -o root -g root -m 00755 -t /usr/local/bin/ /tmp/docker-credential-pass
-ENV VERSION_DCP="v${VERSION_DCP}"
+ENV DOCKER_CREDENTIAL_PASS_VERSION="v${VERSION_DCP}"
 
