@@ -1,46 +1,62 @@
+# syntax=docker/dockerfile:1
+# check=error=true
+
+ARG VERSION_ALPINE='3.24'
+ARG VERSION_COMPOSE='2.17.3'
+ARG VERSION_DCP='0.9.10'
+ARG VERSION_PASS='1.7.4'
+
+FROM "docker/compose-bin:v${VERSION_COMPOSE}" AS compose-bin
+
+FROM scratch AS downloads
+WORKDIR /downloaded
+ADD https://github.com/tcely/docker-restic/raw/master/SigningKeys.pass /downloaded/
+
+ARG VERSION_DCP
+ADD "https://github.com/docker/docker-credential-helpers/releases/download/v${VERSION_DCP}/docker-credential-pass-v${VERSION_DCP}.linux-amd64" /downloaded/docker-credential-pass
+ADD "https://github.com/docker/docker-credential-helpers/releases/download/v${VERSION_DCP}/checksums.txt" /downloaded/docker-credential-pass.checksums.txt
+
 FROM docker/compose:1.29.2
-LABEL maintainer="https://keybase.io/tcely"
 
-ENV ALPINE_VERSION=v3.13
-
+ARG VERSION_ALPINE
 RUN mv -v /etc/apk/repositories /etc/apk/repositories.orig && \
     cp -v -p /etc/apk/repositories.orig /etc/apk/repositories && \
-    sed -e "s,/v[0-9][^/]*/,/${ALPINE_VERSION}/," /etc/apk/repositories.orig > /etc/apk/repositories && \
+    sed -e "s,/v[0-9][^/]*/,/v${VERSION_ALPINE}/," /etc/apk/repositories.orig > /etc/apk/repositories && \
     diff -u /etc/apk/repositories.orig /etc/apk/repositories || :
+ENV VERSION_ALPINE="v${VERSION_ALPINE}"
 
-ENV PASS_VERSION=1.7.4
-
-RUN apk --update upgrade -a && \
+RUN --mount=type=tmpfs,target=/var/cache/apk \
+    apk --update upgrade -a && \
     apk add \
         bash git gnupg \
     && \
     apk add --virtual .build-depends \
-        make \
-    && \
-    rm -rf /var/cache/apk/*
+        make
 
-ADD https://github.com/tcely/docker-restic/raw/master/SigningKeys.pass /tmp/
-
-RUN mkdir -v -m 0700 -p /root/.gnupg && \
+ARG VERSION_PASS
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=bind,source=/downloaded/SigningKeys.pass,target=/tmp/SigningKeys.pass,from=downloads \
+    mkdir -v -m 0700 -p /root/.gnupg && \
     gpg2 --no-options --verbose --keyid-format 0xlong --keyserver-options auto-key-retrieve=true \
         --import /tmp/SigningKeys.pass && \
     git clone --no-checkout --dissociate --reference-if-able /password-store.git \
     'https://git.zx2c4.com/password-store' \
     '/root/password-store' && \
     (cd '/root/password-store' && \
-        git tag -v "${PASS_VERSION}" && \
-        git checkout "${PASS_VERSION}" && \
+        git tag -v "${VERSION_PASS}" && \
+        git checkout "${VERSION_PASS}" && \
         make PREFIX='/usr/local' install \
     ) && \
     apk del --purge .build-depends && \
-    rm -rf /var/cache/apk/* /root/.gnupg /tmp/SigningKeys.pass /root/password-store
+    rm -rf /var/cache/apk/* /root/.gnupg /root/password-store
+ENV VERSION_PASS="${VERSION_PASS}"
 
-ENV DCP_VERSION=v0.6.4
-
-ADD https://github.com/docker/docker-credential-helpers/releases/download/${DCP_VERSION}/docker-credential-pass-${DCP_VERSION}-amd64.tar.gz /tmp/docker-credential-pass.tar.gz
-
-RUN tar -C /tmp/ -zxvvpf /tmp/docker-credential-pass.tar.gz && \
-    rm -v /tmp/docker-credential-pass.tar.gz && \
-    install -v -p -o root -g root -m 00755 -t /usr/local/bin/ /tmp/docker-credential-pass && \
-    rm -v /tmp/docker-credential-pass
+ARG VERSION_DCP
+RUN --mount=type=tmpfs,target=/tmp \
+    --mount=type=bind,source=/downloaded/docker-credential-pass,target=/tmp/docker-credential-pass,from=downloads \
+    --mount=type=bind,source=/downloaded/docker-credential-pass.checksums.txt,target=/tmp/docker-credential-pass.checksums.txt,from=downloads \
+    ln -v -s -f -T docker-credential-pass "docker-credential-pass-v${VERSION_DCP}.linux-amd64" && \
+    sha256sum --check --strict --warn --ignore-missing docker-credential-pass.checksums.txt && \
+    install -v -p -o root -g root -m 00755 -t /usr/local/bin/ /tmp/docker-credential-pass
+ENV VERSION_DCP="v${VERSION_DCP}
 
