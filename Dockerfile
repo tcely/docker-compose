@@ -30,7 +30,7 @@ ENV VERSION_ALPINE="v${VERSION_ALPINE}"
 RUN --mount=type=tmpfs,target=/var/cache/apk \
     apk --update upgrade -a && \
     apk add \
-        bash git gnupg \
+        bash coreutils git gnupg \
     && \
     apk add --virtual .build-depends \
         make
@@ -62,7 +62,7 @@ RUN --mount=type=tmpfs,target=/tmp \
     --mount=type=bind,source=/downloaded/docker-credential-pass,target=/tmp/docker-credential-pass,from=downloads \
     --mount=type=bind,source=/downloaded/docker-credential-pass.checksums.txt,target=/tmp/docker-credential-pass.checksums.txt,from=downloads \
     ln -v -s -f -T docker-credential-pass "docker-credential-pass-v${VERSION_DCP}.linux-amd64" && \
-    sha256sum --check --strict --warn --ignore-missing docker-credential-pass.checksums.txt && \
+    cksum -a sha256 --check --strict --warn --ignore-missing docker-credential-pass.checksums.txt && \
     install -v -p -o root -g root -m 00755 -t /usr/local/bin/ /tmp/docker-credential-pass
 ENV VERSION_DCP="v${VERSION_DCP}"
 
