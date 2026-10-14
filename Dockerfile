@@ -58,5 +58,5 @@ RUN --mount=type=tmpfs,target=/tmp \
     ln -v -s -f -T docker-credential-pass "docker-credential-pass-v${VERSION_DCP}.linux-amd64" && \
     sha256sum --check --strict --warn --ignore-missing docker-credential-pass.checksums.txt && \
     install -v -p -o root -g root -m 00755 -t /usr/local/bin/ /tmp/docker-credential-pass
-ENV VERSION_DCP="v${VERSION_DCP}
+ENV VERSION_DCP="v${VERSION_DCP}"
 
